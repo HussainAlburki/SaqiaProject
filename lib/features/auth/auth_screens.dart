@@ -83,10 +83,48 @@ class AuthScreen extends StatefulWidget {
 
 class _AuthScreenState extends State<AuthScreen> {
   bool isSignUp = true;
+  final _formKey = GlobalKey<FormState>();
   final name = TextEditingController();
   final email = TextEditingController();
   final phone = TextEditingController();
   final pass = TextEditingController();
+
+  String? _requiredValidator(String? value, String fieldName) {
+    if (value == null || value.trim().isEmpty) {
+      return '$fieldName is required';
+    }
+    return null;
+  }
+
+  String? _emailValidator(String? value) {
+    final requiredError = _requiredValidator(value, 'Email');
+    if (requiredError != null) return requiredError;
+    final emailValue = value!.trim();
+    final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+    if (!emailRegex.hasMatch(emailValue)) {
+      return 'Enter a valid email';
+    }
+    return null;
+  }
+
+  String? _passwordValidator(String? value) {
+    final requiredError = _requiredValidator(value, 'Password');
+    if (requiredError != null) return requiredError;
+    if (value!.length < 6) {
+      return 'Password must be at least 6 characters';
+    }
+    return null;
+  }
+
+  String? _phoneValidator(String? value) {
+    final requiredError = _requiredValidator(value, 'Phone');
+    if (requiredError != null) return requiredError;
+    final phoneValue = value!.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+    if (phoneValue.length < 8) {
+      return 'Enter a valid phone number';
+    }
+    return null;
+  }
 
   @override
   void dispose() {
@@ -102,28 +140,51 @@ class _AuthScreenState extends State<AuthScreen> {
     final roleName = widget.role.name[0].toUpperCase() + widget.role.name.substring(1);
     return Scaffold(
       appBar: AppBar(title: Text('$roleName Authentication')),
-      body: ListView(padding: const EdgeInsets.all(20), children: [
-        Text(isSignUp ? 'Create account' : 'Welcome back', style: Theme.of(context).textTheme.headlineMedium),
-        const SizedBox(height: 16),
-        if (isSignUp) ...[
-          TextField(controller: name, decoration: const InputDecoration(labelText: 'Name')),
+      body: Form(
+        key: _formKey,
+        child: ListView(padding: const EdgeInsets.all(20), children: [
+          Text(isSignUp ? 'Create account' : 'Welcome back', style: Theme.of(context).textTheme.headlineMedium),
+          const SizedBox(height: 16),
+          if (isSignUp) ...[
+            TextFormField(
+              controller: name,
+              decoration: const InputDecoration(labelText: 'Name'),
+              validator: (value) => _requiredValidator(value, 'Name'),
+            ),
+            const SizedBox(height: 10),
+            TextFormField(
+              controller: phone,
+              decoration: const InputDecoration(labelText: 'Phone'),
+              keyboardType: TextInputType.phone,
+              validator: (value) => _phoneValidator(value),
+            ),
+            const SizedBox(height: 10),
+          ],
+          TextFormField(
+            controller: email,
+            decoration: const InputDecoration(labelText: 'Email'),
+            keyboardType: TextInputType.emailAddress,
+            validator: _emailValidator,
+          ),
           const SizedBox(height: 10),
-          TextField(controller: phone, decoration: const InputDecoration(labelText: 'Phone')),
-          const SizedBox(height: 10),
-        ],
-        TextField(controller: email, decoration: const InputDecoration(labelText: 'Email')),
-        const SizedBox(height: 10),
-        TextField(controller: pass, obscureText: true, decoration: const InputDecoration(labelText: 'Password')),
-        const SizedBox(height: 20),
-        ElevatedButton(
-          onPressed: () {
-            context.read<SaqiaState>().login(userRole: widget.role, name: name.text.isEmpty ? 'Amina Khan' : name.text);
-            context.go(widget.role == UserRole.donor ? '/donor/home' : widget.role == UserRole.supplier ? '/supplier/home' : '/admin');
-          },
-          child: Text(isSignUp ? 'Sign Up' : 'Sign In'),
-        ),
-        TextButton(onPressed: () => setState(() => isSignUp = !isSignUp), child: Text(isSignUp ? 'Already have an account? Sign In' : 'No account? Sign Up')),
-      ]),
+          TextFormField(
+            controller: pass,
+            obscureText: true,
+            decoration: const InputDecoration(labelText: 'Password'),
+            validator: _passwordValidator,
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: () {
+              if (!(_formKey.currentState?.validate() ?? false)) return;
+              context.read<SaqiaState>().login(userRole: widget.role, name: name.text.isEmpty ? 'Amina Khan' : name.text);
+              context.go(widget.role == UserRole.donor ? '/donor/home' : widget.role == UserRole.supplier ? '/supplier/home' : '/admin');
+            },
+            child: Text(isSignUp ? 'Sign Up' : 'Sign In'),
+          ),
+          TextButton(onPressed: () => setState(() => isSignUp = !isSignUp), child: Text(isSignUp ? 'Already have an account? Sign In' : 'No account? Sign Up')),
+        ]),
+      ),
     );
   }
 }
