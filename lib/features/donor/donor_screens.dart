@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:saqia/core/data/mock_data.dart';
 import 'package:saqia/core/models/saqia_models.dart';
 import 'package:saqia/core/state/saqia_state.dart';
 import 'package:saqia/core/theme/app_theme.dart';
@@ -45,6 +44,7 @@ class DonorHomeScreen extends StatelessWidget {
   const DonorHomeScreen({super.key});
   @override
   Widget build(BuildContext context) {
+    final mosques = context.watch<SaqiaState>().mosques;
     return DonorScaffold(
       index: 0,
       child: ListView(
@@ -62,6 +62,13 @@ class DonorHomeScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
+          if (mosques.isEmpty)
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child: Text('No mosques available yet.'),
+              ),
+            ),
           ...List.generate(
             mosques.length,
             (i) => AnimatedContainer(
@@ -106,7 +113,10 @@ class MosqueDetailsScreen extends StatelessWidget {
   final String id;
   @override
   Widget build(BuildContext context) {
-    final mosque = mosques.firstWhere((m) => m.id == id);
+    final mosque = context.watch<SaqiaState>().mosqueById(id);
+    if (mosque == null) {
+      return const Scaffold(body: Center(child: Text('Mosque not found')));
+    }
     return Scaffold(
       appBar: AppBar(title: Text(mosque.name)),
       body: ListView(
@@ -196,7 +206,10 @@ class PaymentScreen extends StatelessWidget {
   final String mosqueId;
   @override
   Widget build(BuildContext context) {
-    final mosque = mosques.firstWhere((m) => m.id == mosqueId);
+    final mosque = context.watch<SaqiaState>().mosqueById(mosqueId);
+    if (mosque == null) {
+      return const Scaffold(body: Center(child: Text('Mosque not found')));
+    }
     return Scaffold(
       appBar: AppBar(title: const Text('Payment')),
       body: ListView(
